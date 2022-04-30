@@ -26,36 +26,32 @@ def lambda_handler(event, context):
     try:
         page_source = req.urlopen(url).read().decode('utf-8')
         regex_pattern = '<a href="' + reports_folder + docs + '(.*?)"'
-        
-        files = []
-        
+
         doc_links = re.findall(regex_pattern, page_source)
         for doc_link in doc_links:
             #Process the data from the page here.
             clean_name = urllib.parse.unquote(doc_link)  
             print('clean_name: ' + clean_name)
-            files.append(clean_name)
             doc_url = (base_folder + docs + doc_link)
-            #print('doc_url = ' + doc_url)
+            print('doc_url = ' + doc_url)
             req.urlretrieve(doc_url, (tmp_dir + clean_name))
+            upload_file(clean_name)
                 
-        #DEBUG
-        # os.chdir('/tmp')
-        # print('files in ' + os.getcwd() + ':' + str(os.listdir()))
-        # print('size of ' + files[0] + ':' + str(os.stat('/tmp/' + files[0]).st_size))
-                    
-        for file in files:
-            upload_file(file)
+        
+        os.chdir(tmp_dir)
+        print('files in ' + os.getcwd() + ':' + str(os.listdir()))
+        print('size of ' + files[0] + ':' + str(os.stat(tmp_dir + files[0]).st_size))
+
             
     except Exception as e:
         return {
-            'statusCode': 500,# get code from e?
+            'statusCode': 500,
             'body': json.dumps(str(e))
             }
     
     return {
        'statusCode': 200,
-       'body': json.dumps('Success')
+       'body': json.dumps('Hello from TRC!')
     }
     
 def upload_file(file):
@@ -69,6 +65,8 @@ def upload_file(file):
        # Specify the MIME type manually -- S3 does not guess that for you unless you use the web UI
        # and this should be specified if you need S3 to serve it as content.
        contenttype = 'application/xls'
+       #print('P: ' + s3keyname)
+       #print('P: ' + bucket)
        uploadfile = client.put_object(
             Bucket=bucket,
             Body=file_obj,
